@@ -1,0 +1,5 @@
+= Backstage Deployment
+
+The resources in this repo were created using link:https://janus-idp.io/blog/deploying-backstage-onto-openshift-using-helm[the Helm chart described in Janus IDP blog on deploying to OpenShift].
+
+The additional `app-config.yaml` was created by deploying the chart as described in the blog above and extracting the existing config from the running pod. A few extra Template sources were then added, along with a rule for Backstage to accept templates in the "_Register Existing Component_" screen.

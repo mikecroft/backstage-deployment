@@ -1,0 +1,173 @@
+backstage:
+  appConfig:
+    app:
+      baseUrl: http://localhost:3000
+      title: Mike's Backstage App
+    auth:
+      providers: {}
+    backend:
+      baseUrl: http://localhost:7007
+      cache:
+        store: memory
+      cors:
+        credentials: true
+        methods:
+        - GET
+        - HEAD
+        - PATCH
+        - POST
+        - PUT
+        - DELETE
+        origin: http://localhost:3000
+      csp:
+        connect-src:
+        - '''self'''
+        - 'http:'
+        - 'https:'
+      database:
+        client: better-sqlite3
+        connection: ':memory:'
+      listen:
+        port: 7007
+    catalog:
+      import:
+        entityFilename: catalog-info.yaml
+        pullRequestBranchName: backstage-integration
+      locations:
+        - target: ../../examples/entities.yaml
+          type: file
+        - rules:
+          - allow:
+            - Template
+          target: ../../examples/template/template.yaml
+          type: file
+        - rules:
+          - allow:
+            - User
+            - Group
+          target: ../../examples/org.yaml
+          type: file
+        - target: https://github.com/janus-idp/software-templates/blob/main/scaffolder-templates/quarkus-web-template/template.yaml
+          type: url
+          rules:
+            - allow:
+              - Template
+              - Component
+              - System
+              - API
+              - Resource
+              - Location
+              - Template
+              - User
+              - Group
+        - target: https://github.com/janus-idp/software-templates/blob/main/scaffolder-templates/app-template/template.yaml
+          type: url
+          rules:
+            - allow:
+              - Template
+              - Component
+              - System
+              - API
+              - Resource
+              - Location
+              - Template
+              - User
+              - Group
+        - target: https://github.com/backstage/backstage/blob/master/packages/catalog-model/examples/all.yaml
+          type: url
+          rules:
+            - allow:
+              - Template
+              - Component
+              - System
+              - API
+              - Resource
+              - Location
+              - Template
+              - User
+              - Group
+        - rules:
+          - allow:
+            - User
+            - Group
+          target: https://github.com/backstage/backstage/blob/master/packages/catalog-model/examples/acme-corp.yaml
+          type: url
+      rules:
+      - allow:
+        - Component
+        - System
+        - API
+        - Resource
+        - Location
+        - Template
+    integrations:
+      github:
+      - host: github.com
+        token: ${GITHUB_TOKEN}
+    organization:
+      name: MW Day
+    proxy: null
+    scaffolder: null
+    techdocs:
+      builder: local
+      generator:
+        runIn: docker
+      publisher:
+        type: local
+  extraEnvVars:
+    - name: APP_CONFIG_app_baseUrl
+      value: 'https://{{ .Values.ingress.host }}'
+    - name: APP_CONFIG_backend_baseUrl
+      value: 'https://{{ .Values.ingress.host }}'
+    - name: APP_CONFIG_backend_cors_origin
+      value: 'https://{{ .Values.ingress.host }}'
+    - name: APP_CONFIG_backend_database_client
+      value: pg
+    - name: APP_CONFIG_backend_database_connection_host
+      value: '{{ include "backstage.postgresql.host" . }}'
+    - name: APP_CONFIG_backend_database_connection_port
+      value: '5432'
+    - name: APP_CONFIG_backend_database_connection_user
+      value: '{{ .Values.postgresql.auth.username }}'
+    - name: APP_CONFIG_backend_database_connection_password
+      valueFrom:
+        secretKeyRef:
+          key: postgres-password
+          name: '{{ include "backstage.postgresql.fullname" . }}'
+  image:
+    registry: ghcr.io
+    repository: janus-idp/redhat-backstage-build
+    tag: latest
+  installDir: /opt/app-root/src
+ingress:
+  annotations:
+    route.openshift.io/termination: edge
+  enabled: true
+  host: backstage.apps.rosa-4cvm5.jkfb.p1.openshiftapps.com
+postgresql:
+  auth:
+    database: backstage
+    username: postgres
+  database: backstage
+  enabled: true
+  image:
+    registry: registry.redhat.io
+    repository: rhel9/postgresql-13
+    tag: 1-73
+  postgresqlDataDir: /var/lib/pgsql/data/userdata
+  primary:
+    containerSecurityContext:
+      enabled: false
+    extraEnvVars:
+      - name: POSTGRESQL_ADMIN_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            key: postgres-password
+            name: backstage-postgresql
+    persistence:
+      enabled: true
+      mountPath: /var/lib/pgsql/data
+    podSecurityContext:
+      enabled: false
+    securityContext:
+      enabled: false
